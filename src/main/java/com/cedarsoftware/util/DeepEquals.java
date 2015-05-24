@@ -111,6 +111,7 @@ public class DeepEquals
      */
     public static boolean deepEquals(Object a, Object b)
     {
+        try {
         Set<DualKey> visited = new HashSet<>();
         Deque<DualKey> stack = new LinkedList<>();
         stack.addFirst(new DualKey(a, b));
@@ -179,8 +180,11 @@ public class DeepEquals
             }
 
 
-            if (!isContainerType(dualKey._key1) && !isContainerType(dualKey._key2) && !dualKey._key1.getClass().equals(dualKey._key2.getClass()))
+            if (!isContainerType(dualKey._key1) && !isContainerType(dualKey._key2) && !dualKey._key1.getClass().equals(dualKey._key2.getClass()) )
             {   // Must be same class
+                if ( dualKey._key1 instanceof Number ) {
+                    return ((Number) dualKey._key1).longValue() == ((Number) dualKey._key2).longValue();
+                }
                 return false;
             }
 
@@ -286,10 +290,14 @@ public class DeepEquals
                     }
                 }
                 catch (Exception ignored)
-                { }
+                {
+                    System.out.println(ignored);
+                }
             }
         }
-
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
         return true;
     }
 
@@ -470,16 +478,18 @@ public class DeepEquals
             return false;
         }
 
-        Map<Integer, Object> fastLookup = new HashMap<>();
+        // relaxed for JSON serialization. Integer/Long are treated equal as long they have same value and should not fail because of different class
+        Map fastLookup = new HashMap();
 
         for (Map.Entry entry : (Set<Map.Entry>)map2.entrySet())
         {
-            fastLookup.put(deepHashCode(entry.getKey()), entry);
+//            fastLookup.put(deepHashCode(entry.getKey()), entry);
+            fastLookup.put(entry.getKey(), entry);
         }
 
         for (Map.Entry entry : (Set<Map.Entry>)map1.entrySet())
         {
-            Map.Entry other = (Map.Entry)fastLookup.get(deepHashCode(entry.getKey()));
+            Map.Entry other = (Map.Entry)fastLookup.get(entry.getKey());
             if (other == null)
             {
                 return false;
